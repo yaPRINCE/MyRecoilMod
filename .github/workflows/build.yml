@@ -1,0 +1,24 @@
+name: Build Dylib
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest # Важно: нужен именно MacOS раннер
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Randomblock1/theos-action@v1 # Это подтянет Theos в облако
+        with:
+          theos-dir: 'theos'
+          
+      - name: Build
+        run: make package # Собирает твой dylib
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-mod-menu
+          path: .theos/obj/ # Путь к готовому .dylib внутри облака
