@@ -1,1 +1,8 @@
-
+Package: com.yourname.myrecoilmenu
+Name: MyRecoilMenu
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Toggle recoil in CounterFlame via floating button
+Author: YourName
+Section: Tweaks
+Depends: mobilesubstrate
