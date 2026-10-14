@@ -1,24 +1,32 @@
-name: Build Dylib
+name: Build CounterFlameRecoil
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest # Важно: нужен именно MacOS раннер
-    
+    runs-on: macos-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: Randomblock1/theos-action@v1 # Это подтянет Theos в облако
+
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
         with:
-          theos-dir: 'theos'
-          
+          theos-dir: ${{ github.workspace }}/theos
+
       - name: Build
-        run: make package # Собирает твой dylib
-        
-      - name: Upload Artifact
+        run: |
+          export THEOS=${{ github.workspace }}/theos
+          make clean
+          make package
+
+      - name: Upload Dylib
         uses: actions/upload-artifact@v4
         with:
-          name: my-mod-menu
-          path: .theos/obj/ # Путь к готовому .dylib внутри облака
+          name: CounterFlameRecoil
+          path: |
+            .theos/obj/**/*.dylib
+            packages/*.deb
