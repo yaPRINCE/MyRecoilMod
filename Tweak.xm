@@ -8,13 +8,19 @@
 static bool g_recoilEnabled = true;
 static UIWindow *g_menuWindow = nil;
 
-// ===== Оригинальная функция =====
+// ===== Оригинальные функции =====
 static void (*orig_ApplyCameraRecoil)(void *instance, float amount) = NULL;
+static void (*orig_DecayRecoil)(void *instance, float a, float b, float c) = NULL;
 
-// ===== Заглушка (перехватчик) =====
+// ===== Заглушки =====
 static void hook_ApplyCameraRecoil(void *instance, float amount) {
-    if (!g_recoilEnabled) return; // отдача выключена — выходим
+    if (!g_recoilEnabled) return; // отдача выключена — не применяем импульс
     if (orig_ApplyCameraRecoil) orig_ApplyCameraRecoil(instance, amount);
+}
+
+static void hook_DecayRecoil(void *instance, float a, float b, float c) {
+    if (!g_recoilEnabled) return; // отдача выключена — не даём камере смещаться
+    if (orig_DecayRecoil) orig_DecayRecoil(instance, a, b, c);
 }
 
 // ===== Поиск базы UnityFramework в памяти =====
@@ -30,16 +36,22 @@ static uintptr_t getUnityBase(void) {
     return base;
 }
 
-// ===== Установка хука =====
-static void installRecoilHook(void) {
-    uintptr_t rva  = 19329732;              // RVA из дампа v1.3
+// ===== Установка хуков =====
+static void installRecoilHooks(void) {
     uintptr_t base = getUnityBase();
     if (!base) return;
 
-    uintptr_t addr = base + rva;
-    MSHookFunction((void *)addr,
+    // ApplyCameraRecoil — начальный импульс отдачи
+    uintptr_t addr1 = base + 19329732;
+    MSHookFunction((void *)addr1,
                    (void *)hook_ApplyCameraRecoil,
                    (void **)&orig_ApplyCameraRecoil);
+
+    // DecayRecoil — затухание/постепенное смещение камеры
+    uintptr_t addr2 = base + 19329468;
+    MSHookFunction((void *)addr2,
+                   (void *)hook_DecayRecoil,
+                   (void **)&orig_DecayRecoil);
 }
 
 // ===== UI: плавающая кнопка =====
@@ -99,7 +111,7 @@ __attribute__((constructor))
 static void initialize(void) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        installRecoilHook();
+        installRecoilHooks();
         showMenuWindow();
     });
 }
